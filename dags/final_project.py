@@ -1,10 +1,8 @@
 from datetime import datetime, timedelta
 import pendulum
-import os
 from airflow.decorators import dag, task
 from airflow.operators.dummy import DummyOperator
-from operators import (StageToRedshiftOperator, DropTableOperator, CreateTableOperator ) # , LoadFactOperator, LoadDimensionOperator, DataQualityOperator
-from helpers import SqlQueries
+from operators import (StageToRedshiftOperator, ResetTablesOperator, LoadFactOperator, LoadDimensionOperator, DataQualityOperator )
 
 default_args = {
     'owner': 'udacity',
@@ -20,28 +18,10 @@ def final_project():
 
     start_operator = DummyOperator(task_id='Begin_execution')
 
-    drop_staging_event_table_task = DropTableOperator(
-        task_id='Drop_staging_event_table',
-        conn_id='redshift',
-        table="staging_events",
-    )
-
-    drop_staging_songs_table_task = DropTableOperator(
-        task_id='Drop_staging_songs_table',
-        conn_id='redshift',
-        table="staging_songs",
-    )
-
-    create_staging_events_table_task = CreateTableOperator(
-        task_id='Create_staging_events_table',
-        conn_id='redshift',
-        table="staging_events",
-    )
-    create_staging_songs_table_task = CreateTableOperator(
-        task_id='Create_staging_songs_table',
-        conn_id='redshift',
-        table="staging_songs",
-    )
+    reset_tables_task = ResetTablesOperator(
+        task_id='Reset_tables',
+        conn_id="redshift",
+        tables=["staging_events", "staging_songs", "songplays", "users", "songs", "artists", "time"])
 
     stage_events_to_redshift = StageToRedshiftOperator(
         task_id='Stage_events',
@@ -62,33 +42,56 @@ def final_project():
         s3_key="song-data",
     )
 
-    # load_songplays_table = LoadFactOperator(
-    #     task_id='Load_songplays_fact_table',
-    # )
+    load_songplays_table_task = LoadFactOperator(
+        task_id='Load_songplays_fact_table',
+        conn_id="redshift",
+        table="songplays",
+    )
 
-    # load_user_dimension_table = LoadDimensionOperator(
-    #     task_id='Load_user_dim_table',
-    # )
+    load_user_dimension_table = LoadDimensionOperator(
+        task_id='Load_user_dim_table',
+        conn_id="redshift",
+        table="users",
+    )
 
-    # load_song_dimension_table = LoadDimensionOperator(
-    #     task_id='Load_song_dim_table',
-    # )
+    load_song_dimension_table = LoadDimensionOperator(
+        task_id='Load_song_dim_table',
+        conn_id="redshift",
+        table="songs",
+    )
 
-    # load_artist_dimension_table = LoadDimensionOperator(
-    #     task_id='Load_artist_dim_table',
-    # )
+    load_artist_dimension_table = LoadDimensionOperator(
+        task_id='Load_artist_dim_table',
+        conn_id="redshift",
+        table="artists",
+    )
 
-    # load_time_dimension_table = LoadDimensionOperator(
-    #     task_id='Load_time_dim_table',
-    # )
+    load_time_dimension_table = LoadDimensionOperator(
+        task_id='Load_time_dim_table',
+        conn_id="redshift",
+        table="time",
+    )
 
-    # run_quality_checks = DataQualityOperator(
-    #     task_id='Run_data_quality_checks',
-    # )
+    run_quality_checks = DataQualityOperator(
+        task_id='Run_data_quality_checks',
+        conn_id = "redshift",
+    )
 
-    drop_staging_event_table_task >> create_staging_events_table_task
-    drop_staging_songs_table_task >> create_staging_songs_table_task
-    create_staging_events_table_task >> stage_events_to_redshift
-    create_staging_songs_table_task >> stage_songs_to_redshift
+    stop_operator = DummyOperator(task_id='Stop_execution')
+
+    start_operator >> reset_tables_task
+    reset_tables_task >> stage_events_to_redshift
+    reset_tables_task >> stage_songs_to_redshift
+    stage_events_to_redshift >> load_songplays_table_task
+    stage_songs_to_redshift >> load_songplays_table_task
+    load_songplays_table_task >> load_user_dimension_table
+    load_songplays_table_task >> load_song_dimension_table
+    load_songplays_table_task >> load_artist_dimension_table
+    load_songplays_table_task >> load_time_dimension_table
+    load_user_dimension_table >> run_quality_checks
+    load_song_dimension_table >> run_quality_checks
+    load_artist_dimension_table >> run_quality_checks
+    load_time_dimension_table >> run_quality_checks
+    run_quality_checks >> stop_operator
 
 final_project_dag = final_project()

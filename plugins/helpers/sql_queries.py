@@ -2,7 +2,7 @@ class SqlQueries:
     songplay_table_insert = ("""
     INSERT INTO songplays (play_id, start_time, user_id, "level", song_id, artist_id,
         session_id, location, user_agent)
-        SELECT
+        SELECT DISTINCT
             md5(events.sessionid || events.start_time) play_id,
             events.start_time,
             events.userid user_id,
@@ -12,7 +12,7 @@ class SqlQueries:
             events.sessionid session_id,
             events.location,
             events.useragent user_agent
-            FROM (SELECT TIMESTAMP 'epoch' + ts/1000 * interval '1 second' AS start_time, *
+            FROM (SELECT DISTINCT TIMESTAMP 'epoch' + ts/1000 * interval '1 second' AS start_time, *
         FROM staging_events
         WHERE page='NextSong') events
         LEFT JOIN staging_songs songs
@@ -25,28 +25,34 @@ class SqlQueries:
     INSERT INTO users (user_id, first_name, last_name, gender, "level")
         SELECT distinct userid user_id, firstname first_name, lastname last_name, gender, "level"
         FROM staging_events
-        WHERE page='NextSong';
+        WHERE page='NextSong'
+        ORDER BY user_id;
     """)
 
     song_table_insert = ("""
     INSERT INTO public.songs (song_id, title, artist_id, year, duration)
-    SELECT distinct song_id, title, artist_id, year, duration
-        FROM staging_songs;
+    SELECT distinct SS.song_id, title, SS.artist_id, year, duration
+    FROM public.staging_songs SS
+    JOIN public.songplays SP ON SP.song_id = SS.song_id
+    ORDER BY SS.song_id;
     """)
 
     artist_table_insert = ("""
     INSERT INTO artists (artist_id, name, location, latitude, longitude)
-    SELECT distinct artist_id, artist_name name, artist_location AS location,
+    SELECT distinct SS.artist_id, artist_name name, artist_location AS location,
         artist_latitude AS latitude, artist_longitude AS longitude
-        FROM staging_songs;
+        FROM public.staging_songs SS
+        JOIN public.songplays SP ON SP.artist_id = SS.artist_id
+        ORDER BY SS.artist_id;
     """)
 
     time_table_insert = ("""
     INSERT INTO public."time" (start_time, hour, day, week, month, year, weekday)
-    SELECT start_time, extract(hour from start_time) AS hour, extract(day from start_time) AS day,
+    SELECT DISTINCT start_time, extract(hour from start_time) AS hour, extract(day from start_time) AS day,
         extract(week from start_time) AS week, extract(month from start_time) AS month,
         extract(year from start_time) AS year, extract(weekday from start_time) AS weekday
-        FROM songplays;
+        FROM songplays
+        ORDER BY start_time;
     """)
     # STAGING TABLES
 
@@ -57,25 +63,29 @@ class SqlQueries:
     FORMAT AS JSON '{}';
     """)
 
+    COUNT_TABLE_ROWS = ("""
+    SELECT COUNT({}) FROM public.{};
+    """)
+
     DROP_TABLE_SQL = ("DROP TABLE IF EXISTS public.{};")
 
-    DROP_ALL_TABLES = ("""
-         DROP TABLE IF EXISTS public.staging_events;
-         DROP TABLE IF EXISTS public.staging_songs;
-         DROP TABLE IF EXISTS public.songplays;
-         DROP TABLE IF EXISTS public.users;
-         DROP TABLE IF EXISTS public.songs;
-         DROP TABLE IF EXISTS public.artists;
-         DROP TABLE IF EXISTS public.time;
-                       """)
+    # DROP_ALL_TABLES = ("""
+    #      DROP TABLE IF EXISTS public.staging_events;
+    #      DROP TABLE IF EXISTS public.staging_songs;
+    #      DROP TABLE IF EXISTS public.songplays;
+    #      DROP TABLE IF EXISTS public.users;
+    #      DROP TABLE IF EXISTS public.songs;
+    #      DROP TABLE IF EXISTS public.artists;
+    #      DROP TABLE IF EXISTS public.time;
+    #                    """)
 
-    DROP_STAGING_EVENTS_TABLE = ("DROP table IF EXISTS public.staging_events;")
-    DROP_STAGING_SONGS_TABLE = ("DROP table IF EXISTS public.staging_songs;")
-    DROP_SONGPLAYS_FACT_TABLE = ("DROP table IF EXISTS public.songplays;")
-    DROP_USERS_DIMENSION_TABLE = ("DROP table IF EXISTS public.users;")
-    DROP_SONG_DIMENSION_TABLE = ("DROP table IF EXISTS public.songs;")
-    DROP_ARTIST_DIMENSION_TABLE = ("DROP table IF EXISTS public.artists;")
-    DROP_TIME_DIMENSION_TABLE = ("DROP table IF EXISTS public.time;")
+    # DROP_STAGING_EVENTS_TABLE = ("DROP table IF EXISTS public.staging_events;")
+    # DROP_STAGING_SONGS_TABLE = ("DROP table IF EXISTS public.staging_songs;")
+    # DROP_SONGPLAYS_FACT_TABLE = ("DROP table IF EXISTS public.songplays;")
+    # DROP_USERS_DIMENSION_TABLE = ("DROP table IF EXISTS public.users;")
+    # DROP_SONG_DIMENSION_TABLE = ("DROP table IF EXISTS public.songs;")
+    # DROP_ARTIST_DIMENSION_TABLE = ("DROP table IF EXISTS public.artists;")
+    # DROP_TIME_DIMENSION_TABLE = ("DROP table IF EXISTS public.time;")
 
     CREATE_ARTIST_DIMENSION_TABLE = ("""
     CREATE TABLE public.artists (
@@ -181,4 +191,12 @@ class SqlQueries:
         "songs": CREATE_SONG_DIMENSION_TABLE,
         "artists": CREATE_ARTIST_DIMENSION_TABLE,
         "time": CREATE_TIME_DIMENSION_TABLE
+    })
+
+    LOAD_TABLE_QUERIES = ({
+        "songplays": songplay_table_insert,
+        "users": user_table_insert,
+        "songs": song_table_insert,
+        "artists": artist_table_insert,
+        "time": time_table_insert
     })
