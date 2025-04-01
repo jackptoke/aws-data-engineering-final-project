@@ -69,23 +69,7 @@ class SqlQueries:
 
     DROP_TABLE_SQL = ("DROP TABLE IF EXISTS public.{};")
 
-    # DROP_ALL_TABLES = ("""
-    #      DROP TABLE IF EXISTS public.staging_events;
-    #      DROP TABLE IF EXISTS public.staging_songs;
-    #      DROP TABLE IF EXISTS public.songplays;
-    #      DROP TABLE IF EXISTS public.users;
-    #      DROP TABLE IF EXISTS public.songs;
-    #      DROP TABLE IF EXISTS public.artists;
-    #      DROP TABLE IF EXISTS public.time;
-    #                    """)
-
-    # DROP_STAGING_EVENTS_TABLE = ("DROP table IF EXISTS public.staging_events;")
-    # DROP_STAGING_SONGS_TABLE = ("DROP table IF EXISTS public.staging_songs;")
-    # DROP_SONGPLAYS_FACT_TABLE = ("DROP table IF EXISTS public.songplays;")
-    # DROP_USERS_DIMENSION_TABLE = ("DROP table IF EXISTS public.users;")
-    # DROP_SONG_DIMENSION_TABLE = ("DROP table IF EXISTS public.songs;")
-    # DROP_ARTIST_DIMENSION_TABLE = ("DROP table IF EXISTS public.artists;")
-    # DROP_TIME_DIMENSION_TABLE = ("DROP table IF EXISTS public.time;")
+    TRUNCATE_TABLE_SQL = ("TRUNCATE TABLE public.{};")
 
     CREATE_ARTIST_DIMENSION_TABLE = ("""
     CREATE TABLE public.artists (

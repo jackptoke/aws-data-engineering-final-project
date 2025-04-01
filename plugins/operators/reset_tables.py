@@ -17,6 +17,11 @@ class ResetTablesOperator(BaseOperator):
         *args,
         **kwargs
         ):
+        """Constructor for ResetTablesOperator.
+        Args:
+            conn_id (str): Redshift connection ID
+            tables (list): List of tables to reset
+        """
         super(ResetTablesOperator, self).__init__(*args, **kwargs)
         self.conn_id = conn_id
         self.tables = tables
