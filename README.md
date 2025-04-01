@@ -48,33 +48,33 @@ This project demonstrates a robust data pipeline built using Apache Airflow for 
 
    1. **Get the container ID:**
 
-```bash
-        docker ps
-```
+   ```bash
+   docker ps
+   ```
 
-   2.**Enter the webserver container:**
+   2. **Enter the webserver container:**
 
-```bash
-docker exec -it <webserver_container_id> /bin/bash
-```
+   ```bash
+   docker exec -it <webserver_container_id> /bin/bash
+   ```
 
-   3.**Run the following commands (replace placeholders):**
+   3. **Run the following commands (replace placeholders):**
 
-```bash
-airflow connections add 'aws_credentials' \
-   --conn-json '{ "conn_type": "aws", "login": "<YOUR_ACCESS_KEY_ID>", "password": "<YOUR_SECRET_ACCESS_KEY>" }' && \
-airflow connections add 'redshift' \
-   --conn-json '{ "conn_type": "redshift", "login": "<YOUR_REDSHIFT_USER>", "password": "<YOUR_REDSHIFT_PASSWORD>", "host": "<YOUR_REDSHIFT_ENDPOINT>", "port": "5439", "schema": "dev" }' && \
-airflow variables set s3_bucket <YOUR_BUCKET_NAME> && \
-airflow variables set s3_source_log_prefix log_data && \
-airflow variables set s3_source_song_prefix song-data
-```
+   ```bash
+   airflow connections add 'aws_credentials' \
+      --conn-json '{ "conn_type": "aws", "login": "<YOUR_ACCESS_KEY_ID>", "password": "<YOUR_SECRET_ACCESS_KEY>" }' && \
+   airflow connections add 'redshift' \
+      --conn-json '{ "conn_type": "redshift", "login": "<YOUR_REDSHIFT_USER>", "password": "<YOUR_REDSHIFT_PASSWORD>", "host": "<YOUR_REDSHIFT_ENDPOINT>", "port": "5439", "schema": "dev" }' && \
+   airflow variables set s3_bucket <YOUR_BUCKET_NAME> && \
+   airflow variables set s3_source_log_prefix log_data && \
+   airflow variables set s3_source_song_prefix song-data
+   ```
 
-   4.**Start Redshift Cluster:**
+4. **Start Redshift Cluster:**
 
 * Ensure your Redshift cluster is running in the AWS console.
 
-  5.**Run the DAG**:
+5. **Run the DAG**:
 
 * Unpause the DAG and trigger it.
 
